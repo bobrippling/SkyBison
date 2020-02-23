@@ -306,7 +306,7 @@ function SkyBison(initcmdline)
 			endif
 		elseif l:input == "\<c-g>"
 			let l:numberselect = 1 - l:numberselect
-		elseif l:input =~ "[1-9]" && l:numberselect == 1 && len(l:results) >= l:input
+		elseif l:input =~ "[1-9]" && l:numberselect == 1 && len(l:results) >= l:input && !empty(l:cmdline)
 			let l:cmdline = l:cmdline_head.' '.l:results[l:input-1]
 		else
 			let l:cmdline.=l:input
