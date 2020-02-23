@@ -39,6 +39,37 @@ function! s:iskeyword(ch)
 	return match(a:ch, "^\\k") == 0
 endfunction
 
+function! s:longest_subseq(matching, entries)
+	let entries = copy(a:entries)
+	let len = strlen(a:matching)
+
+	call filter(entries, { _, ent -> ent[:len - 1] == a:matching[:len - 1] })
+	if empty(entries)
+		return a:matching
+	endif
+
+	let i = len
+	let done = v:false
+	let longest = -1
+	while !done
+		for ent in entries
+			if i >= len(ent) || ent[i] != entries[0][i]
+				let longest = i - 1
+				let done = v:true
+				break
+			endif
+		endfor
+
+		let i += 1
+	endwhile
+
+	if longest == -1
+		return a:matching
+	endif
+
+	return entries[0][:longest]
+endfunction
+
 " main function
 function SkyBison(initcmdline)
 	" If starting from the cmdline, restart with the cmdline's value
@@ -275,11 +306,18 @@ function SkyBison(initcmdline)
 				let l:cmdline = l:cmdline[:-2]
 			endwhile
 		elseif l:input == "\<tab>" || l:input == "\<c-l>"
-			if len(l:results) > 0
-				let l:d={}
-				" Huge thanks to ZyX-I for this line as well
-				execute "silent normal! :".l:fuzzed_cmdline."\<c-l>\<c-\>eextend(d, {'cmdline':getcmdline()}).cmdline\n"
-				let l:cmdline = l:d['cmdline']
+			if get(g:, "skybison_fuzz",0)
+				" fuzzing active, tab completes to the longest common match,
+				" starting with our search text
+				let l:subseq = s:longest_subseq(l:cmdline_tail, l:results)
+				let l:cmdline = empty(l:cmdline_head) ? l:subseq : l:cmdline_head.' '.l:subseq
+			else
+				if len(l:results) > 0
+					let l:d={}
+					" Huge thanks to ZyX-I for this line as well
+					execute "silent normal! :".l:fuzzed_cmdline."\<c-l>\<c-\>eextend(d, {'cmdline':getcmdline()}).cmdline\n"
+					let l:cmdline = l:d['cmdline']
+				endif
 			endif
 		elseif l:input == "\<cr>"
 			if len(l:results) == 1
