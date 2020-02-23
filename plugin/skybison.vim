@@ -354,7 +354,8 @@ function SkyBison(initcmdline)
 
 	catch /^Vim:Interrupt$/
 		" User pressed <c-c>.  Probably wants to treat it as <esc> - abort and
-		" clean up.
+		" clean up. But add to history for retrievability.
+		call histadd(':', l:cmdline)
 		return s:RunCommandAndQuit("")
 	catch
 		echoerr "SkyBison: This error occurred: " v:exception
